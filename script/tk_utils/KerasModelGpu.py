@@ -18,6 +18,7 @@
 """
 
 from keras.models import Model
+from keras.utils import multi_gpu_model
 from keras.layers.core import Dense, Dropout, Activation, Reshape, Flatten, SpatialDropout1D
 from keras.layers import Input, concatenate, BatchNormalization
 from keras.layers.embeddings import Embedding
@@ -85,9 +86,10 @@ class KerasModel:
 
         model = Model(inputs=inputs,
                       outputs=output)
-        model.compile(
+        parallel_model = multi_gpu_model(model, gpus=2)
+        parallel_model.compile(
             loss='binary_crossentropy',
             # loss=udf_loss,
             optimizer=optimizer_adam,
             metrics=[binary_accuracy, binary_FPA, binary_TPA, binary_auc])
-        return model
+        return parallel_model

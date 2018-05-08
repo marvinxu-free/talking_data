@@ -18,9 +18,11 @@ np.random.seed(seed)
 
 from .AllEmbedding import TalkingData
 # from .KerasModel import KerasModel
-from .KerasModelV1 import KerasModel
+# from .KerasModelV1 import KerasModel
+from .KerasModelGpu import KerasModel
 
 from .roc_call_backs import ROCCallback, ROCCallbackVld
+from .time_call_back import TimeHistory
 from sklearn.metrics import classification_report
 import pandas as pd
 from keras.callbacks import ModelCheckpoint, EarlyStopping
@@ -112,8 +114,9 @@ class Model():
         # roc_rpt = ROCCallback(training_data=(X_train_list, y_train))
         roc_rpt = ROCCallbackVld(training_data=(X_train_list, y_train), validation_data=(X_vld_list, y_vld))
         auc_stop = EarlyStopping(monitor='vld_binary_auc', min_delta=0.0001, patience=1, verbose=1, mode='max')
+        time_rpts = TimeHistory()
 
-        call_backs = [model_chk, roc_rpt, auc_stop]
+        call_backs = [roc_rpt, auc_stop, time_rpts]
         self.model.fit(x=X_train_list,
                        y=y_train,
                        batch_size=self.batch_size,
@@ -124,7 +127,9 @@ class Model():
                        # class_weight=weights,
                        callbacks=call_backs
                        )
-
+        epoch_times = time_rpts.times
+        print(f"all epoch used time is {epoch_times}")
+        self.model.save(f'{self.best_weights_file}')
         # pic_history(history=history.history, metrics_reports=self.metric_rpt, title='Metric Report',
         #             img_file="{0}/metrics.png".format(Data_path))
         # del (X_train_list)
