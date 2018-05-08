@@ -1,7 +1,7 @@
 # python cache
-script/tk_utils/__pycache__/
-script/FM_FTRL/__pycache__/
+DNN/tk_utils/__pycache__/
+FM_FTRL/ftrl_utils/__pycache__/
 
 #log file
-script/FM_FTRL/log.*
-script/tk_utils/log.*
+FM_FTRL/log.*
+DNN/log.*
