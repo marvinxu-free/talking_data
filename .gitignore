@@ -1,0 +1,7 @@
+# python cache
+script/tk_utils/__pycache__/
+script/FM_FTRL/__pycache__/
+
+#log file
+script/FM_FTRL/log.*
+script/tk_utils/log.*
