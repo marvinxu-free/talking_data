@@ -116,7 +116,7 @@ class Model():
         #                             mode='max')
         # roc_rpt = ROCCallback(training_data=(X_train_list, y_train))
         # roc_rpt = ROCCallbackVld(training_data=(X_train_list, y_train), validation_data=(X_vld_list, y_vld))
-        auc_stop = EarlyStopping(monitor='vld_binary_auc', min_delta=0.0001, patience=1, verbose=1, mode='max')
+        auc_stop = EarlyStopping(monitor='vld_binary_auc', min_delta=0.0001, patience=0, verbose=1, mode='max')
         time_rpts = TimeHistory()
 
         call_backs = [auc_stop, time_rpts]

@@ -16,7 +16,10 @@
     1. 加入attend layer
 
 """
-
+import os
+#禁止使用GPU
+os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"] = ""
 from keras.models import Model
 from keras.layers.core import Dense, Dropout, Activation, Reshape, Flatten, SpatialDropout1D
 from keras.layers import Input, concatenate, BatchNormalization
