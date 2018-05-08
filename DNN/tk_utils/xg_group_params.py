@@ -67,15 +67,15 @@ GROUP_BY_NEXT_CLICKS = [
     {'groupby': ['ip', 'os']},
 
     # V3
-    # {'groupby': ['ip', 'app', 'device', 'os', 'channel']},
-    # {'groupby': ['ip', 'os', 'device']},
-    # {'groupby': ['ip', 'os', 'device', 'app']}
+    {'groupby': ['ip', 'app', 'device', 'os', 'channel']},
+    {'groupby': ['ip', 'os', 'device']},
+    {'groupby': ['ip', 'os', 'device', 'app']}
 ]
 
 HISTORY_CLICKS = {
     'identical_clicks': ['ip', 'app', 'device', 'os', 'channel'],
-    # 'app_clicks': ['ip', 'app'],
-    # 'device_clicks': ['ip', 'app', 'device'],
+    'app_clicks': ['ip', 'app'],
+    'device_clicks': ['ip', 'app', 'device'],
 }
 
 ROLLING_BY_TIME = [
