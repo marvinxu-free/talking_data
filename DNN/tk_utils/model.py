@@ -132,7 +132,8 @@ class Model():
                        )
         epoch_times = time_rpts.times
         print(f"all epoch used time is {sum(epoch_times)} s")
-        self.model.save(f'{self.best_weights_file}')
+        # self.model.save(f'{self.best_weights_file}')
+
         # pic_history(history=history.history, metrics_reports=self.metric_rpt, title='Metric Report',
         #             img_file="{0}/metrics.png".format(Data_path))
         # del (X_train_list)

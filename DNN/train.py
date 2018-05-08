@@ -52,5 +52,6 @@ if __name__ == '__main__':
     s = Model(cfg_dict)
     s.fit()
     print(f'train model for keras: done!!!')
-    # print(f'begin to predict result to {cfg_dict["predict_report_file"]}')
-    # s.predict()
+
+    print(f'begin to predict result to {cfg_dict["predict_report_file"]}')
+    s.predict()
