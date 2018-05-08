@@ -40,11 +40,13 @@ def get_version_cfg(version):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-d', '--debug', action='store_true', default=False, help='debug mode.')
+    parser.add_argument('-s', '--section', action='store', default='keras3', help='parameters section')
     FLAGS, _ = parser.parse_known_args()
     if FLAGS.debug:
         cfg_dict = get_version_cfg('keras_debug')
     else:
-        cfg_dict = get_version_cfg('keras3')
+        section = FLAGS.section
+        cfg_dict = get_version_cfg(section)
 
     s = Model(cfg_dict)
     print('begin to predict...')

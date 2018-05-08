@@ -19,7 +19,7 @@ np.random.seed(seed)
 from .AllEmbedding import TalkingData
 # from .KerasModel import KerasModel
 # from .KerasModelV1 import KerasModel
-from .KerasModelGpu import KerasModel
+# from .KerasModelGpu import KerasModel
 
 from .roc_call_backs import ROCCallback, ROCCallbackVld
 from .time_call_back import TimeHistory
@@ -43,6 +43,7 @@ class Model():
         self.epoch_num = int(section.get('epoch_num'))
         self.batch_size = int(section.get('batch_size'))
         self.pick_hours = ast.literal_eval(section.get('pick_hours'))
+        self.model_file = section.get('model_file', 'KerasModelV1')
 
         self.metric_rpt = [
             ('binary_accuracy', u'训练集准确率'),
@@ -71,10 +72,12 @@ class Model():
     def build_model(self):
         decay_steps = int(self.train_size[0] / self.batch_size) * self.epoch_num
         print(
-            f'build model for keras:\n\tepoch: {self.epoch_num}\n\tbatch size: '
+            f'build model {self.model_file} for keras:\n\tepoch: {self.epoch_num}\n\tbatch size: '
             f'{self.batch_size}\n\t decay steps: {decay_steps}')
-        self.model = KerasModel(decay_steps=decay_steps, col_max=self.data_source.col_max,
-                                sample_features=self.data_source.sample_cols)()
+        exec(f'from .{self.model_file} import KerasModel')
+        self.model = eval(
+            'KerasModel(decay_steps=decay_steps, '
+            'col_max=self.data_source.col_max,sample_features=self.data_source.sample_cols)()')
         self.modul_summary()
         # self.plot_model()
 
@@ -108,15 +111,15 @@ class Model():
         # del (X_train)
         gc.collect()
         self.build_model()
-        model_chk = ModelCheckpoint(self.best_weights_file, monitor='binary_accuracy', verbose=1,
-                                    save_best_only=True,
-                                    mode='max')
+        # model_chk = ModelCheckpoint(self.best_weights_file, monitor='binary_accuracy', verbose=1,
+        #                             save_best_only=True,
+        #                             mode='max')
         # roc_rpt = ROCCallback(training_data=(X_train_list, y_train))
-        roc_rpt = ROCCallbackVld(training_data=(X_train_list, y_train), validation_data=(X_vld_list, y_vld))
+        # roc_rpt = ROCCallbackVld(training_data=(X_train_list, y_train), validation_data=(X_vld_list, y_vld))
         auc_stop = EarlyStopping(monitor='vld_binary_auc', min_delta=0.0001, patience=1, verbose=1, mode='max')
         time_rpts = TimeHistory()
 
-        call_backs = [roc_rpt, auc_stop, time_rpts]
+        call_backs = [auc_stop, time_rpts]
         self.model.fit(x=X_train_list,
                        y=y_train,
                        batch_size=self.batch_size,
@@ -128,7 +131,7 @@ class Model():
                        callbacks=call_backs
                        )
         epoch_times = time_rpts.times
-        print(f"all epoch used time is {epoch_times}")
+        print(f"all epoch used time is {sum(epoch_times)} s")
         self.model.save(f'{self.best_weights_file}')
         # pic_history(history=history.history, metrics_reports=self.metric_rpt, title='Metric Report',
         #             img_file="{0}/metrics.png".format(Data_path))
