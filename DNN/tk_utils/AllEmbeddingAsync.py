@@ -19,6 +19,8 @@ import json
 from sklearn.preprocessing import LabelEncoder
 import mlcrate as mlc
 
+import multiprocessing as mp
+
 sample = re.compile('^sample.*')
 sample_match = np.vectorize(lambda x: bool(sample.match(x)))
 
@@ -104,6 +106,7 @@ class TalkingData:
         del dt
         gc.collect()
 
+        # df_train = df_train.set_index('click_time').sort_index()
         df_train = self.get_agg_features(df=df_train, agg_cols=GROUPBY_AGGREGATIONS)
         df_train = self.get_click_order(df=df_train, click_act_dict=HISTORY_CLICKS)
         # df_train = self.get_next_click_time(df=df_train, click_groups=GROUP_BY_NEXT_CLICKS)
@@ -159,6 +162,7 @@ class TalkingData:
         :param click_groups:
         :return:
         """
+        # df = df.sort_values(by='click_time')
         df = df.sort_values(by='click_time')
         for spec in click_groups:
             # Name of new feature
@@ -176,20 +180,52 @@ class TalkingData:
         return df
 
     @classmethod
+    def roll_func(cls, args):
+        df, spec = args
+        roll_func = spec['apply']
+        roll_time = spec['roll']
+        new_feature = '{}_{}_{}'.format('_'.join(spec['groupby']), roll_time, spec['select'])
+        print(f"Grouping by {spec['groupby']}, and rolling {spec['select']} with {roll_time} and apply {roll_func}")
+        all_features = list(set(spec['groupby'] + [spec['select']]))
+        gp = df[all_features].groupby(spec['groupby'])[spec['select']] \
+            .rolling(roll_time).apply(eval(roll_func)) \
+            .reset_index(spec['groupby'], drop=True) \
+            .sort_index().rename(columns={spec['select']: new_feature}).astype(spec['dtype'])
+        return gp, new_feature
+
+    @classmethod
     @timeit
     def get_roll_features(cls, df, roll_cols):
-        df = df.set_index('click_time').sort_index()
-        for spec in roll_cols:
-            roll_func = spec['apply']
-            roll_time = spec['roll']
-            new_feature = '{}_{}_{}'.format('_'.join(spec['groupby']), roll_time, spec['select'])
-            print(f"Grouping by {spec['groupby']}, and rolling {spec['select']} with {roll_time}")
-            all_features = list(set(spec['groupby'] + [spec['select']]))
-            df[new_feature] = df[all_features].groupby(spec['groupby'])[spec['select']] \
-                .rolling(roll_time).apply(eval(roll_func)) \
-                .reset_index(spec['groupby'], drop=True) \
-                .sort_index().rename(columns={spec['select']: new_feature}).astype(spec['dtype'])
+        # df = df.sort_index()
+        # for spec in roll_cols:
+        with mp.Pool() as pool:
+            results = pool.map(cls.roll_func, [(df, i) for i in roll_cols])
+        for x, y in results:
+            df[y] = x
         return df
+
+    @classmethod
+    def agg_func(cls, args):
+        # Name of the aggregation we're applying
+        df, spec = args
+        agg_name = spec['agg_name'] if 'agg_name' in spec else spec['agg']
+        # Name of new feature
+        new_feature = '{}_{}_{}'.format('_'.join(spec['groupby']), agg_name, spec['select'])
+        # Info
+        print("Grouping by {}, and aggregating {} with {}".format(
+            spec['groupby'], spec['select'], agg_name
+        ))
+        # Unique list of features to select
+        all_features = list(set(spec['groupby'] + [spec['select']]))
+        # Perform the groupby
+        gp = df[all_features]. \
+            groupby(spec['groupby'])[[spec['select']]]. \
+            agg(spec['agg']). \
+            reset_index(spec['groupby']). \
+            rename(columns={spec['select']: new_feature})
+            # drop(spec['groupby'], axis=1)
+        gp[new_feature] = gp[new_feature].astype(spec['dtype'])
+        return gp, spec['groupby']
 
     @classmethod
     @timeit
@@ -199,50 +235,44 @@ class TalkingData:
         :param agg_cols:
         :return:
         """
-        df = df.sort_values(by='click_time')
-        for spec in agg_cols:
-            # Name of the aggregation we're applying
-            agg_name = spec['agg_name'] if 'agg_name' in spec else spec['agg']
-            # Name of new feature
-            new_feature = '{}_{}_{}'.format('_'.join(spec['groupby']), agg_name, spec['select'])
-            # Info
-            print("Grouping by {}, and aggregating {} with {}".format(
-                spec['groupby'], spec['select'], agg_name
-            ))
-            # Unique list of features to select
-            all_features = list(set(spec['groupby'] + [spec['select']]))
-            # Perform the groupby
-            gp = df[all_features]. \
-                groupby(spec['groupby'])[spec['select']]. \
-                agg(spec['agg']). \
-                reset_index(). \
-                rename(index=str, columns={spec['select']: new_feature})
+        # df = df.reset_index()
 
-            # Merge back to X_total
-            df = df.merge(gp, on=spec['groupby'], how='left')
-            del gp
-            gc.collect()
-            df[new_feature] = df[new_feature].astype('uint32')
+        # for spec in agg_cols:
+        with mp.Pool() as pool:
+            results = pool.map(cls.agg_func, [(df, i) for i in agg_cols])
+        for x, y in results:
+            df = df.merge(x, on=y, how='left')
+            # df[y] = x[y]
+        df = df.set_index('click_time').sort_index()
         return df
+
+    @classmethod
+    def order_func(cls, args):
+        # Clicks in the past
+        df, spec = args
+        new_feature = '{}_click_order'.format('_'.join(spec['groupby']))
+        all_features = list(set(spec['groupby']))
+        gp = df[all_features]. \
+            groupby(all_features). \
+            cumcount(). \
+            rename(new_feature).astype(spec['dtype'])
+        return gp, new_feature
 
     @classmethod
     @timeit
     def get_click_order(cls, df, click_act_dict):
         """
-
         :param df:
         :param click_act_dict:
         :return:
         """
-        df = df.sort_values(by='click_time')
-        for spec in click_act_dict:
-            # Clicks in the past
-            new_feature = '{}_click_order'.format('_'.join(spec['groupby']))
-            all_features = list(set(spec['groupby']))
-            df[new_feature] = df. \
-                groupby(all_features). \
-                cumcount(). \
-                rename(new_feature).astype(spec['dtype'])
+        df = df.sort_index()
+        # for spec in click_act_dict.items():
+
+        with mp.Pool() as pool:
+            results = pool.map(cls.order_func, [(df, i) for i in click_act_dict])
+        for x, y in results:
+            df[y] = x
         return df
 
     def __call__(self, mode, **kwargs):

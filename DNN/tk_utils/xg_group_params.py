@@ -8,9 +8,9 @@ import numpy as np
 
 GROUPBY_AGGREGATIONS = [
     # new
-    {'groupby': ['ip', 'app'], 'select': 'channel', 'agg': 'count'},
-    {'groupby': ['ip', 'day', 'hour'], 'select': 'channel', 'agg': 'count'},
-    {'groupby': ['ip', 'app', 'os'], 'select': 'channel', 'agg': 'count'},
+    {'groupby': ['ip', 'app'], 'select': 'channel', 'agg': 'count', 'dtype': 'uint32'},
+    {'groupby': ['ip', 'day', 'hour'], 'select': 'channel', 'agg': 'count', 'dtype': 'uint32'},
+    {'groupby': ['ip', 'app', 'os'], 'select': 'channel', 'agg': 'count', 'dtype': 'uint32'},
     # V1 - GroupBy Features #
     #########################
     # Variance in day, for ip-app-channel
@@ -45,13 +45,13 @@ GROUPBY_AGGREGATIONS = [
     # V3 - GroupBy Features                                              #
     # https://www.kaggle.com/bk0000/non-blending-lightgbm-model-lb-0-977 #
     ######################################################################
-    {'groupby': ['ip'], 'select': 'channel', 'agg': 'nunique'},
-    {'groupby': ['ip'], 'select': 'app', 'agg': 'nunique'},
-    {'groupby': ['ip', 'day'], 'select': 'hour', 'agg': 'nunique'},
-    {'groupby': ['ip', 'app'], 'select': 'os', 'agg': 'nunique'},
-    {'groupby': ['ip'], 'select': 'device', 'agg': 'nunique'},
-    {'groupby': ['app'], 'select': 'channel', 'agg': 'nunique'},
-    {'groupby': ['ip', 'device', 'os'], 'select': 'app', 'agg': 'nunique'},
+    {'groupby': ['ip'], 'select': 'channel', 'agg': 'nunique', 'dtype': 'uint16'},
+    {'groupby': ['ip'], 'select': 'app', 'agg': 'nunique', 'dtype': 'uint16'},
+    {'groupby': ['ip', 'day'], 'select': 'hour', 'agg': 'nunique', 'dtype': 'uint32'},
+    {'groupby': ['ip', 'app'], 'select': 'os', 'agg': 'nunique', 'dtype': 'uint16'},
+    {'groupby': ['ip'], 'select': 'device', 'agg': 'nunique', 'dtype': 'uint32'},
+    {'groupby': ['app'], 'select': 'channel', 'agg': 'nunique', 'dtype': int},
+    {'groupby': ['ip', 'device', 'os'], 'select': 'app', 'agg': 'nunique', 'dtype': 'uint32'},
     # {'groupby': ['ip', 'device', 'os'], 'select': 'app', 'agg': 'cumcount'},
     # {'groupby': ['ip'], 'select': 'app', 'agg': 'cumcount'},
     # {'groupby': ['ip'], 'select': 'os', 'agg': 'cumcount'},
@@ -72,14 +72,17 @@ GROUP_BY_NEXT_CLICKS = [
     {'groupby': ['ip', 'os', 'device', 'app']}
 ]
 
-HISTORY_CLICKS = {
-    'identical_clicks': ['ip', 'app', 'device', 'os', 'channel'],
-    'app_clicks': ['ip', 'app'],
-    'device_clicks': ['ip', 'app', 'device'],
-}
+HISTORY_CLICKS = [
+    {'groupby': ['ip', 'app', 'device', 'os', 'channel'], 'dtype': 'uint32'},
+    {'groupby': ['ip', 'app'], 'dtype': 'uint32'},
+    {'groupby': ['ip', 'app', 'device'], 'dtype': 'uint32'},
+]
 
 ROLLING_BY_TIME = [
-    {'groupby': ['ip', 'app'], 'select': 'channel', 'roll': '1H', 'apply': lambda x: np.unique(x).shape[0]},
-    {'groupby': ['ip', 'app', 'os'], 'select': 'channel', 'roll': '1H', 'apply': lambda x: np.unique(x).shape[0]},
-    {'groupby': ['ip', 'app', 'os', 'device'], 'select': 'channel', 'roll': '1H', 'apply': lambda x: np.unique(x).shape[0]},
+    {'groupby': ['ip', 'app'], 'select': 'channel', 'roll': '1H', 'apply': 'lambda x: np.unique(x).shape[0]',
+     'dtype': 'uint16'},
+    {'groupby': ['ip', 'app', 'os'], 'select': 'channel', 'roll': '1H', 'apply': 'lambda x: np.unique(x).shape[0]',
+     'dtype': 'uint16'},
+    {'groupby': ['ip', 'app', 'os', 'device'], 'select': 'channel', 'roll': '1H',
+     'apply': 'lambda x: np.unique(x).shape[0]', 'dtype': 'uint16'},
 ]

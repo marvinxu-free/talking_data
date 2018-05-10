@@ -16,7 +16,7 @@ np.random.seed(seed)
 # from .Tdata import TalkingData
 # from .TXGdata import TalkingData
 
-from .AllEmbedding import TalkingData
+# from .AllEmbedding import TalkingData
 # from .KerasModel import KerasModel
 # from .KerasModelV1 import KerasModel
 # from .KerasModelGpu import KerasModel
@@ -36,7 +36,6 @@ import ast
 class Model():
     def __init__(self, section):
         self.model = None
-        self.data_source = TalkingData(section)
         self.predict_report_file = section.get('predict_report_file')
         self.best_weights_file = section.get('best_weights_file')
         self.Data_path = section.get('Data_path')
@@ -44,6 +43,9 @@ class Model():
         self.batch_size = int(section.get('batch_size'))
         self.pick_hours = ast.literal_eval(section.get('pick_hours'))
         self.model_file = section.get('model_file', 'KerasModelV1')
+        self.section = section
+        self.data_source_file = section.get('data_source_file', 'AllEmbedding')
+        self.data_source = self.get_data_source()
 
         self.metric_rpt = [
             ('binary_accuracy', u'训练集准确率'),
@@ -55,6 +57,12 @@ class Model():
             ('val_binary_TPA', u'验证集TPR'),
             ('val_binary_auc', u'验证集AUC'),
         ]
+
+    def get_data_source(self):
+        print(f'feature engineer from {self.data_source_file}')
+        exec(f'from .{self.data_source_file} import TalkingData')
+        self.data_source = eval('TalkingData(self.section)')
+        return self.data_source
 
     @property
     def train_size(self):

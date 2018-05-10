@@ -125,7 +125,6 @@ class TalkingData:
         """
 
         # for spec in click_groups:
-
         pool = Pool()
         res = pool.map(cls.next_click_time, [(df, i) for i in click_groups])
         pool.close()

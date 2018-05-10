@@ -82,14 +82,14 @@ class KerasModel:
         lr_init, lr_fin = 0.001, 0.0001
         lr_decay = exp_decay(lr_init, lr_fin, self.decay_steps)
         optimizer_adam = Adam(lr=0.001, decay=lr_decay)
-        # udf_loss = wrapped_partial(bin_categorical_crossentropy, e1=1.2, e2=0.8)
+        udf_loss = wrapped_partial(bin_categorical_crossentropy, e1=1.2, e2=0.8)
 
         model = Model(inputs=inputs,
                       outputs=output)
         parallel_model = multi_gpu_model(model, gpus=2)
         parallel_model.compile(
-            loss='binary_crossentropy',
-            # loss=udf_loss,
+            # loss='binary_crossentropy',
+            loss=udf_loss,
             optimizer=optimizer_adam,
             metrics=[binary_accuracy, binary_FPA, binary_TPA, binary_auc])
         return parallel_model
